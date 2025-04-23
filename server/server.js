@@ -1,11 +1,11 @@
 const cors = require('cors');
 const express = require('express');
-const routes = require('../routes');
+const routes = require('../routes/instrument');
 
 const server = express();
 server.use(cors());
 server.options('*', cors());
-
 server.use(express.json());
 server.use('/api', routes);
+
 module.exports = server;
