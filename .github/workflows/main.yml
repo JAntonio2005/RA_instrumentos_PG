@@ -1,5 +1,5 @@
 name: Deploy mysql-api
-#werwrewead
+
 on:
   push:
     branches: ["master"]
@@ -7,25 +7,40 @@ on:
 jobs:
   deploy-api:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: echo 'hello world ...'
-      - run: ls -la
 
-      - run: touch .env
-      - run: echo  'DEV_DATABASE_URL=${{secrets.MYSQL_CONN}}' >> .env
-      - run: cat .env
-      - run: docker build -t joseantonioortiz/mysql-restapi:${{github.sha}} .
-      - run: docker images
-      - name: docker login
+      - name: Crear archivo .env
+        run: |
+          touch .env
+          echo "DEV_DATABASE_URL=${{ secrets.MYSQL_CONN }}" >> .env
+          cat .env
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Build imagen Docker
+        run: docker build -t ${{ secrets.DOCKER_USER }}/${{ secrets.MODEL_NAME }}:${{ github.sha }} .
+
+      - name: Tag como latest
+        run: docker tag ${{ secrets.DOCKER_USER }}/${{ secrets.MODEL_NAME }}:${{ github.sha }} \
+                     ${{ secrets.DOCKER_USER }}/${{ secrets.MODEL_NAME }}:latest
+
+      - name: Login Docker Hub
         env:
-          DOCKER_USER: ${{secrets.DOCKER_USER}}
-          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-        run:  docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-        
-      - name: docker push
-        run:  docker push ${{ secrets.DOCKER_USER}}/mysql-restapi:${{github.sha}}   
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
 
+      - name: Push imagen con SHA
+        run: docker push ${{ secrets.DOCKER_USER }}/${{ secrets.MODEL_NAME }}:${{ github.sha }}
+
+      - name: Push imagen como latest
+        run: docker push ${{ secrets.DOCKER_USER }}/${{ secrets.MODEL_NAME }}:latest
